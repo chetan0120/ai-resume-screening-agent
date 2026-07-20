@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Screening Agent - Elite Matchmaker</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;900&family=Fira+Code:400;500&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+    
+    <!-- Background Animated Blobs -->
+    <div class="blob-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Header/Navigation Bar -->
+    <header class="navbar glass">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fa-solid fa-microchip-ai logo-icon"></i>
+                <span class="logo-text">RESUME<span class="highlight">ALIGN</span></span>
+            </div>
+            <nav class="nav-links">
+                <button id="history-toggle" class="btn-secondary">
+                    <i class="fa-solid fa-clock-rotate-left"></i> History
+                </button>
+                <button id="theme-toggle" class="btn-icon" aria-label="Toggle Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-wrapper">
+        
+        <!-- ================= LANDING / INPUT SECTION ================= -->
+        <section id="landing-section" class="landing-section">
+            <div class="hero">
+                <h1 class="hero-title animate-glow">
+                    AI Resume Screening <span class="gradient-text">Agent</span>
+                </h1>
+                <p class="hero-tagline">
+                    Intelligently Match Candidates with Job Descriptions using LLMs and Semantic AI
+                </p>
+            </div>
+            
+            <form id="analysis-form" class="uploader-container">
+                <div class="input-grid">
+                    <!-- Resume Upload Container -->
+                    <div class="input-card glass upload-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-file-pdf icon-accent"></i>
+                            <h3>Upload Resumes</h3>
+                        </div>
+                        <p class="card-subtitle">Accepts one or more PDF files (Max 8MB each)</p>
+                        
+                        <div id="dropzone" class="dropzone">
+                            <input type="file" id="resume-file" name="resumes" accept=".pdf" class="file-input" multiple>
+                            <div class="dropzone-content">
+                                <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
+                                <p class="dropzone-text">Drag and drop PDF resumes here or <span class="browse-link">browse</span></p>
+                            </div>
+                            <div id="file-info" class="file-info hidden">
+                                <i class="fa-solid fa-file-lines doc-icon"></i>
+                                <span id="file-name" class="file-name">filename.pdf</span>
+                                <button type="button" id="remove-file-btn" class="btn-remove">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Job Description Textarea -->
+                    <div class="input-card glass jd-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-briefcase icon-accent"></i>
+                            <h3>Job Description</h3>
+                        </div>
+                        <p class="card-subtitle">Paste target job role details, duties, and skills</p>
+                        <textarea id="job-description" name="job_description" placeholder="Paste the job description details here... e.g. Senior Python Developer with AWS, Flask, and Scikit-Learn experience..." required></textarea>
+                    </div>
+                </div>
+                
+                <div class="cta-container">
+                    <button type="submit" id="submit-btn" class="btn-primary btn-large">
+                        <span class="btn-text">ANALYZE CANDIDATES</span>
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Marketing/Feature Cards -->
+            <div class="features-grid">
+                <div class="feature-card glass">
+                    <i class="fa-solid fa-brain"></i>
+                    <h4>Semantic Similarity</h4>
+                    <p>Goes beyond literal keyword matching using Sentence Transformers mapping candidate suitability.</p>
+                </div>
+                <div class="feature-card glass">
+                    <i class="fa-solid fa-ranking-star"></i>
+                    <h4>ATS Compliance Audit</h4>
+                    <p>Validates file formatting, contact links, and core resume structure headings against parser systems.</p>
+                </div>
+                <div class="feature-card glass">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <h4>Groq Powered Insights</h4>
+                    <p>Returns structured summaries, experience mapping, strengths & weaknesses, and matching scores.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= LOADING OVERLAY ================= -->
+        <section id="loading-section" class="loading-section hidden">
+            <div class="loading-card glass">
+                <div class="loader-spinner"></div>
+                <h3 class="loading-title">Analyzing Resumes</h3>
+                <div class="loading-progress-bar-container">
+                    <div id="loading-progress" class="loading-progress-bar"></div>
+                </div>
+                <p id="loading-status" class="loading-status-text">Parsing PDF structures...</p>
+            </div>
+        </section>
+
+        <!-- ================= REPORT / DASHBOARD RESULTS ================= -->
+        <section id="results-section" class="results-section hidden animate-fade-in">
+            
+            <!-- Result Top Nav/Actions -->
+            <div class="results-action-bar glass">
+                <div class="candidate-meta">
+                    <h2 id="result-candidate-name">John Doe</h2>
+                    <div class="badge-row">
+                        <span id="result-recommendation-badge" class="badge">Strong Hire</span>
+                        <span id="result-readiness-badge" class="badge bg-purple">Readiness: High</span>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <a id="btn-download-report" href="#" class="btn-primary">
+                        <i class="fa-solid fa-download"></i> Export Report (TXT)
+                    </a>
+                    <button id="btn-reset" class="btn-secondary">
+                        <i class="fa-solid fa-rotate-left"></i> Match Another
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ranked Leaderboard Section (Visible on batch runs) -->
+            <div id="leaderboard-container" class="card glass hidden animate-card">
+                <div class="card-header leaderboard-header">
+                    <div class="header-left">
+                        <i class="fa-solid fa-trophy text-yellow"></i>
+                        <h3>Ranked Candidate Shortlist</h3>
+                    </div>
+                    <div class="shortlist-exports">
+                        <a id="btn-download-csv" href="/download_shortlist/csv" class="btn-secondary btn-sm">
+                            <i class="fa-solid fa-file-csv text-green"></i> Export CSV Shortlist
+                        </a>
+                        <a id="btn-download-json" href="/download_shortlist/json" class="btn-secondary btn-sm">
+                            <i class="fa-solid fa-file-code text-cyan"></i> Export JSON Shortlist
+                        </a>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Candidate Name</th>
+                                <th>Overall Match</th>
+                                <th>Semantic Match</th>
+                                <th>ATS Match</th>
+                                <th>Recommendation</th>
+                                <th>Dashboard Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-rows">
+                            <!-- Dynamic rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Dashboard Visual Gauges Grid -->
+            <div class="dashboard-scores-grid">
+                <!-- Circular gauge for Overall Match Score -->
+                <div class="score-card glass animate-card">
+                    <span class="card-label">Overall Match Score</span>
+                    <div class="gauge-wrapper">
+                        <svg class="progress-ring" width="160" height="160">
+                            <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.05)" stroke-width="12" fill="transparent" r="70" cx="80" cy="80"/>
+                            <circle id="overall-gauge" class="progress-ring__circle progress-overall" stroke="url(#overall-grad)" stroke-width="12" stroke-dasharray="439.8" stroke-dashoffset="439.8" stroke-linecap="round" fill="transparent" r="70" cx="80" cy="80"/>
+                            <!-- Gradients for ring paths -->
+                            <defs>
+                                <linearGradient id="overall-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#8a2be2"/>
+                                    <stop offset="100%" stop-color="#00ffff"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div id="overall-score-text" class="gauge-value">0%</div>
+                    </div>
+                    <p class="gauge-description">Weighted index of ATS, Semantics, Experience, and Education.</p>
+                </div>
+                
+                <!-- Circular gauge for Semantic Similarity -->
+                <div class="score-card glass animate-card">
+                    <span class="card-label">Semantic Similarity</span>
+                    <div class="gauge-wrapper">
+                        <svg class="progress-ring" width="160" height="160">
+                            <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.05)" stroke-width="12" fill="transparent" r="70" cx="80" cy="80"/>
+                            <circle id="semantic-gauge" class="progress-ring__circle progress-semantic" stroke="url(#semantic-grad)" stroke-width="12" stroke-dasharray="439.8" stroke-dashoffset="439.8" stroke-linecap="round" fill="transparent" r="70" cx="80" cy="80"/>
+                            <defs>
+                                <linearGradient id="semantic-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#00f2fe"/>
+                                    <stop offset="100%" stop-color="#4facfe"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div id="semantic-score-text" class="gauge-value">0%</div>
+                    </div>
+                    <p class="gauge-description">Contextual conceptual alignment via Sentence Transformers.</p>
+                </div>
+
+                <!-- Circular gauge for ATS Score -->
+                <div class="score-card glass animate-card">
+                    <span class="card-label">ATS Score</span>
+                    <div class="gauge-wrapper">
+                        <svg class="progress-ring" width="160" height="160">
+                            <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.05)" stroke-width="12" fill="transparent" r="70" cx="80" cy="80"/>
+                            <circle id="ats-gauge" class="progress-ring__circle progress-ats" stroke="url(#ats-grad)" stroke-width="12" stroke-dasharray="439.8" stroke-dashoffset="439.8" stroke-linecap="round" fill="transparent" r="70" cx="80" cy="80"/>
+                            <defs>
+                                <linearGradient id="ats-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#ff007f"/>
+                                    <stop offset="100%" stop-color="#7928ca"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div id="ats-score-text" class="gauge-value">0%</div>
+                    </div>
+                    <p class="gauge-description">Evaluates parser headings compatibility, formatting, and emails.</p>
+                </div>
+
+                <!-- Linear Progress indicators for Sub-Scores -->
+                <div class="score-card glass linear-scores-card animate-card">
+                    <h3>Sub-Relevance Audits</h3>
+                    <div class="linear-progress-item">
+                        <div class="progress-info">
+                            <span>Experience Relevance</span>
+                            <span id="experience-score-text">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="experience-progress-bar" class="progress-bar-fill bg-violet" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="linear-progress-item">
+                        <div class="progress-info">
+                            <span>Education Alignment</span>
+                            <span id="education-score-text">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="education-progress-bar" class="progress-bar-fill bg-cyan" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="linear-progress-item">
+                        <div class="progress-info">
+                            <span>Keyword Match Density</span>
+                            <span id="keyword-score-text">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="keyword-progress-bar" class="progress-bar-fill bg-rose" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Grid: Summaries, Verdicts, Skills, Questions -->
+            <div class="content-grid">
+                
+                <!-- LEFT HAND SIDE: Profiles & Audits -->
+                <div class="content-column-left">
+                    
+                    <!-- Candidate Summary -->
+                    <div class="card glass animate-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-user-tie"></i>
+                            <h3>Candidate Summary</h3>
+                        </div>
+                        <p id="result-candidate-summary" class="summary-paragraph">Loading summary analysis...</p>
+                    </div>
+
+                    <!-- Recruiter Verdict -->
+                    <div class="card glass verdict-card animate-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-gavel"></i>
+                            <h3>Detailed Recruiter Verdict</h3>
+                        </div>
+                        <div class="verdict-content">
+                            <i class="fa-solid fa-quote-left quote-icon-left"></i>
+                            <p id="result-recruiter-verdict">Loading detailed verdict justification...</p>
+                        </div>
+                    </div>
+
+                    <!-- Strengths and Weaknesses -->
+                    <div class="card glass animate-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                            <h3>Strengths & Weaknesses</h3>
+                        </div>
+                        <div class="split-list-grid">
+                            <div class="strength-column">
+                                <h4 class="list-title green-title"><i class="fa-solid fa-circle-check"></i> Strengths</h4>
+                                <ul id="result-strengths-list" class="styled-list plus-bullets">
+                                    <li>Loading strengths...</li>
+                                </ul>
+                            </div>
+                            <div class="weakness-column">
+                                <h4 class="list-title red-title"><i class="fa-solid fa-triangle-exclamation"></i> Gaps & Weaknesses</h4>
+                                <ul id="result-weaknesses-list" class="styled-list minus-bullets">
+                                    <li>Loading weaknesses...</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ATS Structural Compliance Checks -->
+                    <div class="card glass animate-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-spell-check"></i>
+                            <h3>ATS Checklist & Formatting Warnings</h3>
+                        </div>
+                        <div class="split-list-grid">
+                            <!-- Checklist items -->
+                            <div>
+                                <h4 class="list-title"><i class="fa-solid fa-clipboard-list text-cyan"></i> Heading / Contact Presence</h4>
+                                <ul class="checklist">
+                                    <li>
+                                        <i id="check-exp-icon" class="fa-solid fa-circle-xmark check-no"></i> Experience Section
+                                    </li>
+                                    <li>
+                                        <i id="check-edu-icon" class="fa-solid fa-circle-xmark check-no"></i> Education Section
+                                    </li>
+                                    <li>
+                                        <i id="check-ski-icon" class="fa-solid fa-circle-xmark check-no"></i> Skills Section
+                                    </li>
+                                    <li>
+                                        <i id="check-eml-icon" class="fa-solid fa-circle-xmark check-no"></i> Email Contact Details
+                                    </li>
+                                    <li>
+                                        <i id="check-phn-icon" class="fa-solid fa-circle-xmark check-no"></i> Phone Details
+                                    </li>
+                                    <li>
+                                        <i id="check-lnk-icon" class="fa-solid fa-circle-xmark check-no"></i> LinkedIn Account Link
+                                    </li>
+                                </ul>
+                            </div>
+                            <!-- Formatting Warnings -->
+                            <div>
+                                <h4 class="list-title"><i class="fa-solid fa-triangle-exclamation text-rose"></i> Formatting Warnings</h4>
+                                <ul id="result-formatting-list" class="styled-list warning-bullets">
+                                    <li>No formatting warnings detected!</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT HAND SIDE: Skill Matrices & Interview Prep -->
+                <div class="content-column-right">
+                    
+                    <!-- Skill Overlap Matrix -->
+                    <div class="card glass animate-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-layer-group"></i>
+                            <h3>Skills Alignment Matrix</h3>
+                        </div>
+                        <div class="matrix-tabs">
+                            <button id="tab-btn-found" class="tab-btn active">Matching Skills</button>
+                            <button id="tab-btn-missing" class="tab-btn">Missing Skills</button>
+                        </div>
+                        
+                        <!-- Categorized Matching Skills Content -->
+                        <div id="tab-content-found" class="tab-pane active">
+                            <div id="found-skills-container" class="categorized-skills-grid">
+                                <!-- Dynamically filled with categorized tag boxes -->
+                                <p class="no-skills-msg">No skills identified matching taxonomy.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Categorized Missing Skills Content -->
+                        <div id="tab-content-missing" class="tab-pane">
+                            <div id="missing-skills-container" class="categorized-skills-grid">
+                                <!-- Dynamically filled with categorized tag boxes -->
+                                <p class="no-skills-msg">No missing skills detected based on Job Description requirements.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Skill Chart -->
+                    <div class="card glass chart-card animate-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-chart-line"></i>
+                            <h3>Skill Categories Analysis</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="skillsRadarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Suggested Resume Improvements & Missing Keywords -->
+                    <div class="card glass animate-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-lightbulb"></i>
+                            <h3>Actionable Improvements</h3>
+                        </div>
+                        <div class="improvements-box">
+                            <h4 class="list-title"><i class="fa-solid fa-file-pen text-cyan"></i> Suggested Edits</h4>
+                            <ul id="result-improvements-list" class="styled-list bullet-list">
+                                <li>Loading improvements...</li>
+                            </ul>
+                            
+                            <h4 class="list-title mt-20"><i class="fa-solid fa-key text-violet"></i> Missing Industry Keywords</h4>
+                            <div id="result-keywords-container" class="tags-container">
+                                <!-- Dynamically injected keywords -->
+                                <span class="tag tag-red">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interview Questions accordion -->
+                    <div class="card glass animate-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-comments-question"></i>
+                            <h3>Targeted Interview Prep</h3>
+                        </div>
+                        <div id="result-questions-accordion" class="accordion-container">
+                            <!-- Accordion items loaded dynamically -->
+                            <p>Loading suggested interview questions...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- ================= RECENT SCREENINGS DRAWER ================= -->
+        <section id="history-sidebar" class="history-sidebar glass">
+            <div class="sidebar-header">
+                <h3><i class="fa-solid fa-clock-rotate-left"></i> Screening History</h3>
+                <div class="sidebar-header-btns">
+                    <button id="btn-clear-history" class="btn-clear-text" title="Clear all histories">Clear All</button>
+                    <button id="history-close" class="btn-icon-close"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div id="history-list" class="history-list-container">
+                <!-- Dynamically filled history items -->
+                <p class="empty-history-text">No screening records found.</p>
+            </div>
+        </section>
+        
+        <!-- Background Overlay for Drawer Open -->
+        <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+        
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 RESUMEALIGN. Powered by Groq Llama-3.3 & Sentence Transformers. Project by Chetan Patil.</p>
+            <div class="footer-links">
+                <a href="https://github.com" target="_blank"><i class="fa-brands fa-github"></i> GitHub Project</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Libraries CDNs -->
+    <!-- Chart.js CDN for interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Canvas Confetti CDN for matching score milestones -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Local Javascript Logic -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
